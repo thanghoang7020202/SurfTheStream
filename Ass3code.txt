@@ -100,29 +100,54 @@ FROM Movie M
 GROUP BY M.releaseDate
 
 
-c4:
+c4: *** Should we use join or Where in this question?
 
 SELECT C.id, C.name, F.name, DATEDIFF(C.dob,F.dob)
 FROM Customer C
 JOIN Customer F ON (C.bestFriend = F.id)
 
-c5:
-SELECT C.id, F.id, COUNT(P.customer)
+c5: correlated?
+
+SELECT C.id, C.bestFriend, COUNT(P.customer)
 FROM Customer C
-JOIN Customer F ON (C.bestFriend = F.id)
-JOIN Previews P ON (C.id = P.customer) 
-JOIN Previews FP ON (F.id = FP.customer)
-GROUP BY P.customer
-HAVING COUNT(P.customer) = COUNT(FP.customer)
+JOIN Previews P ON (C.id = P.customer)
+GROUP BY C.id
+HAVING COUNT(P.customer) = (
+    SELECT COUNT(P2.customer)
+    FROM Previews P2
+    WHERE(P2.customer = C.bestFriend)
+    )
 
 c6:
-SELECT C.id, C.name, COUNT(S.customer)
+
+SELECT C.id, C.name
 FROM Customer C
 JOIN Streams S ON (S.customer = C.id)
 WHERE S.duration >= 3600 AND C.id IN (
     SELECT S2.customer 
-	FROM Streams S2
+    FROM Streams S2
     GROUP BY S2.customer
     HAVING COUNT(S2.customer) = 5
-	)
+    )
 GROUP BY S.customer
+
+c7:
+SELECT M.prefix, M.suffix
+FROM Movie M
+JOIN Previews PM ON (PM.moviePrefix = M.suffix AND PM.movieSuffix = M.suffix)
+WHERE M.name LIKE "%Harry Potter%";
+
+SELECT C.id, C.name
+FROM Customer C
+JOIN Previews P ON (P.customer = C.id)
+
+
+c8:
+
+----------CRITICAL THINKING
+
+SELECT C.id
+FROM Customer C
+JOIN Streams S ON (C.id = S.customer)
+GROUP BY C.id
+HAVING SUM(S.duration) > 180000;
