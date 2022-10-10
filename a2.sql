@@ -1,0 +1,1 @@
+ALTER TABLE Movie ADD CountryOfOrigin VARCHAR(3) NULL;

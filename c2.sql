@@ -1,0 +1,3 @@
+SELECT *
+FROM Streams S 
+WHERE DATEDIFF(CURRENT_DATE, DATE(S.timestamp)) < 7
