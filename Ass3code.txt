@@ -1,0 +1,179 @@
+Customer [id, name, dob, bestFriend, subscriptionLevel]
+Customer.bestFriend references Customer.id
+Customer.subscriptionLevel references Subscription.level
+
+Movie [prefix, suffix, name, description, rating, releaseDate]
+
+Previews [customer, moviePrefix, movieSuffix, timestamp]
+Previews.customer references Customer.id
+Previews.{moviePrefix, movieSuffix} reference Movie.{prefix, suffix}
+
+Streams [customer, moviePrefix, movieSuffix, timestamp, duration]
+Streams.customer reference Customer.id
+Streams.{moviePrefix, movieSuffix} reference Movie.{prefix, suffix}
+Subscription [level, price]
+
+
+a1:
+
+CREATE TABLE `MovieEmployee` (
+	moviePrefix  VARCHAR(4) NOT NULL,
+	movieSuffix  VARCHAR(4) NOT NULL,
+	employeeName VARCHAR(100) NOT NULL,
+	role ENUM("Actor", "Production", "Other") NOT NULL,
+    startdate DATE,
+    PRIMARY KEY (moviePrefix, movieSuffix, employeeName, role),
+    FOREIGN KEY MovieEmployee(moviePrefix, movieSuffix) REFERENCES Movie(prefix, suffix)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+
+--INSERT INTO MovieEmployee (MoviePrefix, MovieSuffix, employeeName, role, startdate)
+--VALUES ('ABJF', '7245', "thang", "Actor", null);
+
+a2:
+
+ALTER TABLE Movie
+DROP COLUMN CountryOfOrigin;
+
+ALTER TABLE Movie
+ADD CountryOfOrigin VARCHAR(3) NULL;
+
+b1:
+insert into Customer (id, name, dob, bestFriend, subscriptionLevel) values ('474-asc-176', 'Davin Joao', '2020-01-22', null, 'pro');
+insert into Customer (id, name, dob, bestFriend, subscriptionLevel) values ('474-Tjl-121', 'Davin Joal', '1800-01-22', null, 'pro');
+insert into Customer (id, name, dob, bestFriend, subscriptionLevel) values ('35', 'Davan Joao', '2020-01-22', null, 'pro');
+
+SELECT *
+FROM Customer C
+WHERE CHAR_LENGTH(C.id) < 3 
+    OR FLOOR(DATEDIFF(CURRENT_DATE, C.dob)/365) > 110 
+    OR FLOOR(DATEDIFF(CURRENT_DATE, C.dob)/365) < 10;
+
+DELETE FROM Customer C
+WHERE CHAR_LENGTH(C.id) < 3 
+    OR FLOOR(DATEDIFF(CURRENT_DATE, C.dob)/365) > 110 
+    OR FLOOR(DATEDIFF(CURRENT_DATE, C.dob)/365) < 10;
+
+b2: *****
+
+insert into Previews (customer, moviePrefix, movieSuffix, timestamp)
+    SELECT C.id, M.prefix, M.suffix, NOW()
+    FROM Customer C, Movie M
+    WHERE M.name LIKE "%Harry Potter%" AND C.id NOT IN (
+        SELECT P.customer
+        FROM Previews P
+        JOIN Movie M2 ON (M2.prefix = P.moviePrefix AND M2.suffix = P.movieSuffix)
+        WHERE M2.name LIKE "%Harry Potter%"
+        )
+
+c1: *** DO we need order by month and date
+
+SELECT C.id, C.name
+FROM Customer C
+WHERE C.subscriptionLevel LIKE 'basic'
+ORDER BY YEAR(C.dob) DESC, MONTH(C.dob) DESC, DAY(C.dob) DESC
+
+
+c2:
+
+insert into Streams (customer, moviePrefix, movieSuffix, timestamp, duration) values ('738-lzs-935', 'ZXHG', '9777', '2022-10-08 09:54:37', 4097);
+
+DELETE FROM Streams 
+WHERE Streams.timestamp ='2022-10-8 09:54:37';
+    
+SELECT *
+FROM Streams S 
+WHERE DATEDIFF(CURRENT_DATE, DATE(S.timestamp)) < 7
+
+
+c3:
+
+-- INSERT INTO `Movie` (`prefix`, `suffix`, `name`, `description`, `rating`, `releaseDate`) VALUE
+-- ('ABAF', '8245', 'Move', 'NEW ADD MOVIE', 'MA15+', '1965-10-13');
+
+DELETE FROM Movie
+WHERE Movie.prefix = 'ABAF' AND Movie.suffix = '8245';
+
+SELECT M.releaseDate, COUNT(*)
+FROM Movie M
+GROUP BY M.releaseDate
+
+
+c4: *** Should we use join or Where in this question?
+
+SELECT C.id, C.name, F.name, DATEDIFF(C.dob,F.dob)
+FROM Customer C
+JOIN Customer F ON (C.bestFriend = F.id)
+
+c5: correlated?
+
+SELECT C.id, C.bestFriend, COUNT(P.customer)
+FROM Customer C
+JOIN Previews P ON (C.id = P.customer)
+GROUP BY C.id
+HAVING COUNT(P.customer) = (
+    SELECT COUNT(P2.customer)
+    FROM Previews P2
+    WHERE(P2.customer = C.bestFriend)
+    )
+
+c6:
+
+SELECT C.id, C.name
+FROM Customer C
+JOIN Streams S ON (S.customer = C.id)
+WHERE S.duration >= 3600 AND C.id IN (
+    SELECT S2.customer 
+    FROM Streams S2
+    GROUP BY S2.customer
+    HAVING COUNT(S2.customer) = 5
+    )
+GROUP BY S.customer
+
+c7:
+
+CREATE OR REPLACE VIEW `HPmovies` AS
+SELECT M.prefix, M.suffix, PM.customer
+FROM Movie M
+JOIN Previews PM ON (PM.moviePrefix = M.prefix AND PM.movieSuffix = M.suffix)
+WHERE M.name LIKE "%Harry Potter%";
+
+SELECT * FROM HPmovies;
+
+SELECT C.id, C.name
+FROM Customer C
+JOIN Previews P ON (P.customer= C.id)
+WHERE (P.moviePrefix, P.movieSuffix, P.customer) IN (
+    SELECT * FROM HPmovies
+    )
+
+
+
+c8:
+
+CREATE VIEW `CustomerRating` AS
+SELECT S.customer, M.rating, COUNT(M.rating) AS content 
+FROM Streams S
+JOIN Movie M ON (M.prefix = S.moviePrefix AND M.suffix = S.movieSuffix)
+GROUP BY M.rating,S.customer
+ORDER BY S.customer;
+
+CREATE VIEW `MaxRating` AS 
+SELECT CR.customer, MAX(CR.content) AS RR
+FROM CustomerRating CR
+GROUP BY CR.customer
+HAVING MAX(CR.content);
+
+SELECT CR.customer, CR.rating
+FROM CustomerRating CR
+JOIN MaxRating MR ON (CR.customer = MR.customer)
+WHERE CR.content = MR.RR;
+
+----------CRITICAL THINKING
+
+SELECT C.id
+FROM Customer C
+JOIN Streams S ON (C.id = S.customer)
+GROUP BY C.id
+HAVING SUM(S.duration) > 180000;
