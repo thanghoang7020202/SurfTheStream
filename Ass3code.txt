@@ -132,17 +132,45 @@ WHERE S.duration >= 3600 AND C.id IN (
 GROUP BY S.customer
 
 c7:
-SELECT M.prefix, M.suffix
+
+CREATE OR REPLACE VIEW `HPmovies` AS
+SELECT M.prefix, M.suffix, PM.customer
 FROM Movie M
-JOIN Previews PM ON (PM.moviePrefix = M.suffix AND PM.movieSuffix = M.suffix)
+JOIN Previews PM ON (PM.moviePrefix = M.prefix AND PM.movieSuffix = M.suffix)
 WHERE M.name LIKE "%Harry Potter%";
+
+SELECT * FROM HPmovies;
 
 SELECT C.id, C.name
 FROM Customer C
-JOIN Previews P ON (P.customer = C.id)
+JOIN Previews P ON (P.customer= C.id)
+WHERE (P.moviePrefix, P.movieSuffix, P.customer) IN (
+    SELECT * FROM HPmovies
+    )
+
 
 
 c8:
+
+CREATE OR REPLACE VIEW `CustomerRating` AS
+SELECT S.customer, M.rating, COUNT(M.rating) AS content 
+FROM Streams S
+JOIN Movie M ON (M.prefix = S.moviePrefix AND M.suffix = S.movieSuffix)
+GROUP BY M.rating,S.customer
+ORDER BY S.customer;
+
+CREATE OR REPLACE VIEW `MaxRating` AS 
+SELECT CR.customer, MAX(CR.content) AS RR
+FROM CustomerRating CR
+GROUP BY CR.customer
+HAVING MAX(CR.content);
+
+SELECT * FROM CustomerRating;
+
+SELECT CR.customer, CR.rating
+FROM CustomerRating CR
+JOIN MaxRating MR ON (CR.customer = MR.customer)
+WHERE CR.content = MR.RR;
 
 ----------CRITICAL THINKING
 
