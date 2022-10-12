@@ -1,3 +1,3 @@
-SELECT M.releaseDate
+SELECT YEAR(M.releaseDate), COUNT(*)
 FROM Movie M
-GROUP BY M.releaseDate
+GROUP BY YEAR(M.releaseDate);
