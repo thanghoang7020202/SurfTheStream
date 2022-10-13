@@ -1,4 +1,4 @@
-SELECT C.id, C.name 
-FROM Customer C 
-WHERE C.subscriptionLevel = "Basic"
-ORDER BY TIMESTAMPDIFF(YEAR , C.dob, NOW()) ASC;
+SELECT C.id, C.name, C.dob
+FROM Customer C
+WHERE C.subscriptionLevel LIKE 'basic'
+ORDER BY YEAR(C.dob) DESC, MONTH(C.dob) DESC, DAY(C.dob) DESC;
