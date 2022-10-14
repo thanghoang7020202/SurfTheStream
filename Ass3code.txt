@@ -28,13 +28,13 @@ CREATE TABLE `MovieEmployee` (
 );
 
 
---INSERT INTO MovieEmployee (MoviePrefix, MovieSuffix, employeeName, role, startdate)
---VALUES ('ABJF', '7245', "thang", "Actor", null);
+-- INSERT INTO MovieEmployee (MoviePrefix, MovieSuffix, employeeName, role, startdate)
+-- VALUES ('ABJF', '7245', "thang", "Actor", null);
 
 a2:
 
-ALTER TABLE Movie
-DROP COLUMN CountryOfOrigin;
+-- ALTER TABLE Movie
+-- DROP COLUMN CountryOfOrigin;
 
 ALTER TABLE Movie
 ADD CountryOfOrigin VARCHAR(3) NULL;
@@ -82,9 +82,10 @@ insert into Streams (customer, moviePrefix, movieSuffix, timestamp, duration) va
 DELETE FROM Streams 
 WHERE Streams.timestamp ='2022-10-8 09:54:37';
     
-SELECT *
-FROM Streams S 
-WHERE DATEDIFF(CURRENT_DATE, DATE(S.timestamp)) < 7
+SELECT DISTINCT S.moviePrefix, S.movieSuffix, M.name
+FROM Streams S
+JOIN Movie M ON (M.prefix = S.moviePrefix AND M.suffix = S.movieSuffix)
+WHERE DATEDIFF(CURRENT_DATE, DATE(S.timestamp)) < 7;
 
 
 c3:
@@ -152,25 +153,29 @@ WHERE (P.moviePrefix, P.movieSuffix, P.customer) IN (
 
 c8:
 
-CREATE OR REPLACE VIEW `CustomerRating` AS
+CREATE VIEW `CustomerRating` AS
 SELECT S.customer, M.rating, COUNT(M.rating) AS content 
 FROM Streams S
 JOIN Movie M ON (M.prefix = S.moviePrefix AND M.suffix = S.movieSuffix)
 GROUP BY M.rating,S.customer
 ORDER BY S.customer;
 
-CREATE OR REPLACE VIEW `MaxRating` AS 
+CREATE VIEW `MaxRating` AS 
 SELECT CR.customer, MAX(CR.content) AS RR
 FROM CustomerRating CR
 GROUP BY CR.customer
 HAVING MAX(CR.content);
 
-SELECT * FROM CustomerRating;
-
+CREATE VIEW `result` AS
 SELECT CR.customer, CR.rating
 FROM CustomerRating CR
 JOIN MaxRating MR ON (CR.customer = MR.customer)
 WHERE CR.content = MR.RR;
+
+SELECT R1.customer, R1.rating
+FROM result R1
+LEFT JOIN result R2 ON (R1.customer = R2.customer AND R1.rating < R2.rating)
+WHERE R2.customer IS NULL;
 
 ----------CRITICAL THINKING
 
