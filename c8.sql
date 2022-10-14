@@ -1,11 +1,11 @@
-CREATE OR REPLACE VIEW `CustomerRating` AS
+CREATE VIEW `CustomerRating` AS
 SELECT S.customer, M.rating, COUNT(M.rating) AS content 
 FROM Streams S
 JOIN Movie M ON (M.prefix = S.moviePrefix AND M.suffix = S.movieSuffix)
 GROUP BY M.rating,S.customer
 ORDER BY S.customer;
 
-CREATE OR REPLACE VIEW `result` AS
+CREATE VIEW `result` AS
 SELECT CR.customer, CR.rating
 FROM CustomerRating CR
 WHERE CR.content IN (
